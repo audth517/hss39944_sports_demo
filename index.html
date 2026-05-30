@@ -874,7 +874,7 @@ body{background:#fff;display:block;min-height:100vh;min-height:100dvh;padding:0;
           워밍업과 마무리는 부위와 무관한 공통 동작이에요. 동작당 유지 시간은 레벨 2 기준입니다.</p>
       </div>
 
-      <div class="cta-fix"><button class="go" onclick="go('camera')">5일째 스트레칭 시작하기</button></div>
+      <div class="cta-fix"><button class="go" id="summaryStartBtn" onclick="go('camera')">5일째 스트레칭 시작하기</button></div>
     </section>
 
     <!-- ══════════ 2.2 CAMERA SETTING ══════════ -->
@@ -956,7 +956,7 @@ body{background:#fff;display:block;min-height:100vh;min-height:100dvh;padding:0;
     <section class="screen" id="complete">
       <div class="complete-burst"><svg viewBox="0 0 24 24"><path d="M5 20C4 11 10 4 20 4c0 10-7 16-15 15.5l5-8.5-3.5 2.5z"/></svg></div>
       <h1>오늘도 해냈어요!</h1>
-      <p class="c-sub"><svg viewBox="0 0 24 24"><path d="M13 2c.7 2.6-.4 4.1-1.6 5.5C9.9 9.3 8 10.8 8 13.6a4.5 4.5 0 109 0c0-1.7-.7-2.9-1.6-3.9.2 1.5-.6 2.4-1.5 2.4-1.2 0-1.7-1.3-1-2.7C12.6 7.6 14 5.4 13 2z"/></svg>5일 연속 스트레칭 달성</p>
+      <p class="c-sub"><svg viewBox="0 0 24 24"><path d="M13 2c.7 2.6-.4 4.1-1.6 5.5C9.9 9.3 8 10.8 8 13.6a4.5 4.5 0 109 0c0-1.7-.7-2.9-1.6-3.9.2 1.5-.6 2.4-1.5 2.4-1.2 0-1.7-1.3-1-2.7C12.6 7.6 14 5.4 13 2z"/></svg><span id="completeStreakTxt">5일 연속 스트레칭 달성</span></p>
       <div class="c-stats">
         <div class="c-stat"><div class="cs-v">9분</div><div class="cs-k">수행 시간</div></div>
         <div class="c-stat"><div class="cs-v">4개</div><div class="cs-k">완료 동작</div></div>
@@ -1093,6 +1093,9 @@ function applyMode(){
   document.getElementById('streakTitle').textContent = freshMode?'오늘부터 시작이에요':'4일 연속 스트레칭 중';
   document.getElementById('heroTitle').textContent = freshMode?'첫 스트레칭 시작하기':'연속 5일째 스트레칭 하기';
   document.getElementById('recHead').innerHTML = freshMode?'기록이 <span class="em">시작</span>되는 곳':'꾸준함이 <span class="em">쌓이고</span> 있어요';
+  const dayLabel = freshMode ? 0 : 5;   // 처음이에요 = 0일째 / 이미 사용중 = 5일째
+  document.getElementById('summaryStartBtn').textContent = `${dayLabel}일째 스트레칭 시작하기`;
+  document.getElementById('completeStreakTxt').textContent = `${dayLabel}일 연속 스트레칭 달성`;
 }
 function openModal(){ document.getElementById('modal').classList.add('show'); }
 function closeModal(){ document.getElementById('modal').classList.remove('show'); }
