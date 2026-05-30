@@ -510,6 +510,62 @@ button.ghost:hover{color:var(--ink);}
 .timer.acc-warn{color:var(--warn);}
 .timer .t-cap{display:block;font-family:'Gowun Dodum',sans-serif;font-size:11px;font-weight:400;
   color:rgba(243,244,236,.55);letter-spacing:.04em;margin-top:-2px;}
+
+/* ── 모드별 스테이지: livecam=실제 카메라 / 그 외=예시 아바타 ── */
+.device:not(.livecam) .str-stage .pose-canvas{display:none;}
+.device:not(.livecam) .pose-loading{display:none;}
+.mock-avatar{position:relative;z-index:2;}
+.device.livecam .mock-avatar{display:none;}
+/* 동작 예시 아바타 카드 (오른쪽 상단) — 첫번째 코드 demo-card 이식, 앱 톤에 맞춤 */
+.demo-card{position:absolute;top:14px;right:14px;width:104px;height:134px;border-radius:16px;
+  background:rgba(255,255,255,.93);border:1px solid rgba(255,255,255,.7);z-index:3;
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  box-shadow:0 8px 22px rgba(0,0,0,.30);}
+.device.livecam .demo-card{display:flex;}
+.demo-card canvas{width:80px;height:94px;object-fit:contain;}
+.demo-card span{font-size:10.5px;font-weight:700;color:var(--accent-deep);}
+@media (max-width:380px){ .demo-card{width:88px;height:116px;} .demo-card canvas{width:68px;height:80px;} }
+
+/* ── 아팠던 동작 선택 (통증 4단계+) ── */
+.sore-pick{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;}
+.sore-q{font-size:13px;font-weight:bold;margin-bottom:8px;}
+.sore-q span{font-size:11px;color:var(--ink-soft);font-weight:400;}
+.sore-list{display:flex;flex-wrap:wrap;gap:8px;}
+.sore-item{border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
+  padding:8px 13px;border-radius:999px;font-size:12.5px;cursor:pointer;user-select:none;transition:all .12s;}
+.sore-item:active{transform:scale(.96);}
+.sore-item.on{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:bold;}
+
+/* ── 내일 세트(출력) ── */
+.next-set{margin-top:14px;border-radius:14px;border:1px solid var(--accent-deep);
+  background:var(--accent-soft);padding:14px 15px;display:none;}
+.next-set.show{display:block;animation:screenIn .3s;}
+.next-set .ns-h{font-family:'Gowun Batang',serif;font-weight:700;font-size:14.5px;margin-bottom:5px;}
+.next-set .ns-h b{color:var(--accent-deep);}
+.next-set .ns-reason{font-size:12px;color:var(--ink);margin-bottom:10px;line-height:1.55;}
+.next-set .ns-move{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:5px 0;}
+.next-set .ns-move .dot2{width:7px;height:7px;border-radius:50%;background:var(--accent-deep);flex:0 0 7px;}
+.next-set .ns-move.added{color:var(--accent-deep);font-weight:bold;}
+.next-set .ns-move.removed{color:var(--danger);}
+.next-set .ns-move.removed .nm-name{text-decoration:line-through;opacity:.75;}
+.next-set .ns-move.removed .dot2{background:var(--danger);}
+.next-set .ns-tag{font-size:9.5px;font-weight:bold;padding:1px 6px;border-radius:5px;margin-left:auto;}
+.next-set .ns-move.added .ns-tag{background:var(--accent-deep);color:#fff;}
+.next-set .ns-move.removed .ns-tag{background:var(--danger);color:#fff;}
+
+/* ── 진행 기록 (기록 탭) ── */
+.device.has-records #records .rec-empty{display:none;}
+.hist-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);}
+.hist-row:last-child{border-bottom:none;}
+.hist-ico{width:38px;height:38px;border-radius:11px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex:0 0 38px;}
+.hist-ico svg{width:19px;height:19px;fill:var(--accent-deep);}
+.hist-date{flex:1;}
+.hist-date .hr-d{font-size:13.5px;font-weight:bold;}
+.hist-date .hr-s{font-size:11.5px;color:var(--ink-soft);}
+.hist-pain{font-size:12px;font-weight:bold;padding:4px 10px;border-radius:999px;white-space:nowrap;}
+.hist-pain.p-low{background:var(--accent-soft);color:var(--accent-deep);}
+.hist-pain.p-mid{background:rgba(223,148,66,.16);color:var(--warn);}
+.hist-pain.p-high{background:rgba(221,95,95,.14);color:var(--danger);}
 </style>
 <style>
 /* === LIVE 전체화면 데모 모드 (베젤·가짜 상태바·배경 제거) === */
@@ -704,6 +760,12 @@ body{background:#fff;display:block;min-height:100vh;min-height:100dvh;padding:0;
         <h1 id="recHead" style="font-size:23px;">꾸준함이 <span class="em">쌓이고</span> 있어요</h1>
       </div>
 
+      <div class="card" id="histCard" style="display:none;">
+        <h2 style="font-size:16px;">진행 기록</h2>
+        <p class="hint">완료한 날짜 · 회차 · 그날의 통증</p>
+        <div id="histList" style="margin-top:6px;"></div>
+      </div>
+
       <div class="empty-state rec-empty">
         <div class="es-ico"><svg viewBox="0 0 24 24"><path d="M4 19V5h2v12h14v2zM8 15l3.5-4.5 2.5 3 3-4 3 5.5z" opacity=".25"/><path d="M5 20C4 11 10 4 20 4c0 10-7 16-15 15.5l5-8.5-3.5 2.5z"/></svg></div>
         <div class="es-t">아직 기록이 없어요</div>
@@ -874,7 +936,7 @@ body{background:#fff;display:block;min-height:100vh;min-height:100dvh;padding:0;
           워밍업과 마무리는 부위와 무관한 공통 동작이에요. 동작당 유지 시간은 레벨 2 기준입니다.</p>
       </div>
 
-      <div class="cta-fix"><button class="go" id="summaryStartBtn" onclick="go('camera')">5일째 스트레칭 시작하기</button></div>
+      <div class="cta-fix"><button class="go" id="summaryStartBtn" onclick="startNormalSession()">5일째 스트레칭 시작하기</button></div>
     </section>
 
     <!-- ══════════ 2.2 CAMERA SETTING ══════════ -->
@@ -883,9 +945,9 @@ body{background:#fff;display:block;min-height:100vh;min-height:100dvh;padding:0;
         <button class="back" onclick="go('summary')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.6 5L16 6.4 10.4 12 16 17.6 14.6 19l-7-7z"/></svg></button>
         <span class="title">카메라 준비</span>
       </div>
-      <p class="hint">전신이 점선 안에 들어오도록 기기를 세워주세요.</p>
+      <p class="hint" id="camHint">전신이 점선 안에 들어오도록 기기를 세워주세요.</p>
 
-      <div class="proto-note">
+      <div class="proto-note" id="protoNote">
         <span class="pn-ico"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 5a1.3 1.3 0 110 2.6A1.3 1.3 0 0112 7zm1.2 10.5h-2.4v-6h2.4z"/></svg></span>
         <div class="pn-t"><b>프로토타입 안내</b> · 실제 자세 인식은 <b>목·어깨·가슴 3개 동작</b>에 한해 동작합니다. 마지막 호흡 정리는 타이머로 진행돼요. 아래 버튼을 누르면 카메라와 인식 모델을 불러옵니다.</div>
       </div>
@@ -918,7 +980,7 @@ body{background:#fff;display:block;min-height:100vh;min-height:100dvh;padding:0;
         <div><div class="cr-t">오늘은 전신 스트레칭이 불가해요</div><div class="cr-s">기존 세트에서 전신 스트레칭을 빼드려요</div></div>
       </div>
 
-      <button class="go" id="beginBtn" onclick="beginSession()">카메라 인식 시작</button>
+      <button class="go" id="beginBtn" onclick="camProceed()">카메라 인식 시작</button>
       <div class="cam-error" id="camError">
         <b>카메라 또는 인식 모델을 불러오지 못했어요.</b><br>
         브라우저 카메라 권한을 허용했는지 확인하거나, HTTPS / localhost(예: Live Server) 환경에서 열어주세요.
@@ -942,6 +1004,16 @@ body{background:#fff;display:block;min-height:100vh;min-height:100dvh;padding:0;
           <div class="pose-loading hidden" id="poseLoading">
             <div><span class="pl-dot"></span><br>카메라와 인식 모델을 준비하고 있어요…</div>
           </div>
+          <svg class="mock-avatar" id="mockAvatar" viewBox="0 0 200 300" width="150" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" stroke="#bcd87f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="100" cy="50" r="26"/>
+              <line x1="100" y1="76" x2="100" y2="182"/>
+              <line x1="100" y1="100" x2="56" y2="150"/><line x1="100" y1="100" x2="148" y2="134"/>
+              <line x1="100" y1="182" x2="66" y2="272"/><line x1="100" y1="182" x2="134" y2="272"/>
+            </g>
+            <circle cx="100" cy="50" r="6" fill="#bcd87f"/>
+          </svg>
+          <div class="demo-card" id="demoCard"><canvas id="demoCanvas" width="180" height="212"></canvas><span>동작 예시</span></div>
           <div class="feedback" id="feedback"><svg id="fbIco" viewBox="0 0 24 24"><path d="M9 11l3-7c1.4 0 2.5 1.1 2.5 2.5V9h4a2 2 0 012 2l-1.2 6a2 2 0 01-2 1.6H9zM4 11h3v9H4z"/></svg><span id="fbText">좋아요! 자세가 정확해요</span></div>
         </div>
         <div class="str-ctrl">
@@ -958,18 +1030,25 @@ body{background:#fff;display:block;min-height:100vh;min-height:100dvh;padding:0;
       <h1>오늘도 해냈어요!</h1>
       <p class="c-sub"><svg viewBox="0 0 24 24"><path d="M13 2c.7 2.6-.4 4.1-1.6 5.5C9.9 9.3 8 10.8 8 13.6a4.5 4.5 0 109 0c0-1.7-.7-2.9-1.6-3.9.2 1.5-.6 2.4-1.5 2.4-1.2 0-1.7-1.3-1-2.7C12.6 7.6 14 5.4 13 2z"/></svg><span id="completeStreakTxt">5일 연속 스트레칭 달성</span></p>
       <div class="c-stats">
-        <div class="c-stat"><div class="cs-v">9분</div><div class="cs-k">수행 시간</div></div>
-        <div class="c-stat"><div class="cs-v">4개</div><div class="cs-k">완료 동작</div></div>
-        <div class="c-stat"><div class="cs-v">목·허리</div><div class="cs-k">집중 부위</div></div>
+        <div class="c-stat"><div class="cs-v" id="cStatTime">9분</div><div class="cs-k">수행 시간</div></div>
+        <div class="c-stat"><div class="cs-v" id="cStatCount">4개</div><div class="cs-k">완료 동작</div></div>
+        <div class="c-stat"><div class="cs-v sm" id="cStatFocus">목·어깨</div><div class="cs-k">집중 부위</div></div>
       </div>
 
-      <!-- 통증 피드백 (기존 html 로직 기반, UI 스타일) -->
+      <!-- 통증 피드백 → 세트 조정 (두번째 코드 플로우: 입력·처리·출력) -->
       <div class="card pain-card">
+        <span class="step-tag">입력 · 통증 피드백</span>
         <h2>오늘 세트는 어땠나요?</h2>
-        <p class="hint" style="margin-bottom:10px;">가장 강한 통증을 1~6으로 알려주세요. 내일 세트 강도가 자동 조정됩니다.</p>
+        <p class="hint" style="margin-bottom:10px;">가장 강한 통증을 1~6으로 알려주세요.</p>
         <div class="pain-scale" id="painScale"></div>
         <div class="verdict" id="verdict"></div>
         <div class="lvl-track" id="lvlTrack"></div>
+        <div class="sore-pick" id="sorePick" style="display:none;">
+          <div class="sore-q">어느 동작이 아팠나요? <span>통증 4단계 이상 · 복수 선택</span></div>
+          <div class="sore-list" id="soreList"></div>
+        </div>
+        <button class="go" id="nextBtn" style="display:none;margin-top:14px;" onclick="advanceDay()">내일 세트 받기 →</button>
+        <div class="next-set" id="nextSet"></div>
       </div>
 
       <div class="c-btns">
@@ -1082,20 +1161,40 @@ function toggleTxt(b,id,on,off){ document.getElementById(id).textContent = b.cla
 let surveyReturn='home';
 function goSurvey(from){ surveyReturn=from||'home'; go('survey'); }
 let freshMode=false;
+let liveCam=false;   // 스트레칭 데모(실제 카메라)=true / 처음이에요(예시)=false
 function startFresh(){ freshMode=true; applyMode(); goSurvey('welcome'); }
 function startReturning(){ freshMode=false; applyMode(); go('home'); }
-/* 프로토타입 데모 진입: 카메라 준비 화면(자세 인식 시작)으로 바로 이동 */
-function startDemo(){ freshMode=false; applyMode(); go('camera'); }
+/* 스트레칭 데모 진입: 실제 카메라 인식 */
+function startDemo(){ liveCam=true; freshMode=false; applyMode(); prepCamera(); go('camera'); }
+/* 처음이에요/일반 흐름: 카메라 없이 화면 예시 */
+function startNormalSession(){ liveCam=false; prepCamera(); go('camera'); }
+/* 카메라 준비 화면을 모드에 맞게 구성 */
+function prepCamera(){
+  document.getElementById('protoNote').style.display = liveCam ? 'flex' : 'none';
+  const btn=document.getElementById('beginBtn'); btn.textContent = liveCam ? '카메라 인식 시작' : '다음'; btn.disabled=false;
+  document.getElementById('camError').classList.remove('show');
+  document.getElementById('camHint').textContent = liveCam
+    ? '실제 카메라로 자세를 인식해요. 상반신이 화면에 크게 들어오게 세워주세요.'
+    : '예시 화면으로 진행돼요. 전신이 점선 안에 들어오도록 기기를 세워주세요.';
+}
+/* 카메라 준비 → 진행 (데모=실제 카메라 / 일반=예시 세트) */
+function camProceed(){
+  if(liveCam){ beginSession(); }
+  else { recognitionEnabled=false; SEQ=buildSet(); startStretching(); }
+}
+function refreshDayLabels(){
+  const n = freshMode ? session.history.length : 5;
+  const sb=document.getElementById('summaryStartBtn'); if(sb) sb.textContent=`${n}일째 스트레칭 시작하기`;
+}
 function applyMode(){
+  resetSession();
   device.classList.toggle('fresh', freshMode);
   renderGhome();
   buildWeek('miniStreak',true); buildWeek('recWeek',false);
   document.getElementById('streakTitle').textContent = freshMode?'오늘부터 시작이에요':'4일 연속 스트레칭 중';
   document.getElementById('heroTitle').textContent = freshMode?'첫 스트레칭 시작하기':'연속 5일째 스트레칭 하기';
   document.getElementById('recHead').innerHTML = freshMode?'기록이 <span class="em">시작</span>되는 곳':'꾸준함이 <span class="em">쌓이고</span> 있어요';
-  const dayLabel = freshMode ? 0 : 5;   // 처음이에요 = 0일째 / 이미 사용중 = 5일째
-  document.getElementById('summaryStartBtn').textContent = `${dayLabel}일째 스트레칭 시작하기`;
-  document.getElementById('completeStreakTxt').textContent = `${dayLabel}일 연속 스트레칭 달성`;
+  refreshDayLabels();
 }
 function openModal(){ document.getElementById('modal').classList.add('show'); }
 function closeModal(){ document.getElementById('modal').classList.remove('show'); }
@@ -1252,12 +1351,45 @@ document.querySelectorAll('.survey-chips').forEach(g=>{
    recognized 동작(type 有)은 카메라+MediaPipe 로 실시간 인식,
    정확도 측정 후 자세를 holdGoal 만큼 유지하면 자동으로 다음 동작으로 넘어감.
    type 가 없는 동작(마무리 호흡)과 타이머 모드(recognitionEnabled=false)는 기존 카운트다운으로 진행. */
-const SEQ=[
-  {name:'목 옆으로 늘이기',   type:'neckSide',  threshold:0.66, holdGoal:1.3, cue:'고개를 한쪽 어깨로 천천히 기울여요', sec:35},
-  {name:'어깨 가로 당기기',   type:'crossBody', threshold:0.62, holdGoal:1.3, cue:'한쪽 팔을 가슴 앞으로 가로질러 당겨요', sec:35},
-  {name:'등 뒤 깍지 가슴 열기', type:'chestOpen', threshold:0.58, holdGoal:1.3, cue:'어깨를 펴고 가슴을 활짝 열어요', sec:35},
-  {name:'마무리 호흡 정리',   type:null,                                       cue:'천천히 깊게 호흡하며 마무리해요', sec:20},
+/* 데모(실제 카메라) 전용 고정 세트 — 인식 가능한 3개 + 호흡 */
+const DEMO_SEQ=[
+  {id:'neck',  name:'목 옆으로 늘이기',   type:'neckSide',  threshold:0.66, holdGoal:1.3, sec:35},
+  {id:'sh',    name:'어깨 가로 당기기',   type:'crossBody', threshold:0.62, holdGoal:1.3, sec:35},
+  {id:'chest', name:'등 뒤 깍지 가슴 열기', type:'chestOpen', threshold:0.58, holdGoal:1.3, sec:35},
+  {id:'cool',  name:'마무리 호흡 정리',   type:null, sec:20},
 ];
+let SEQ = DEMO_SEQ;   // 진입 모드에 따라 교체
+
+/* ── 적응형 세트 (두번째 코드 buildRoutine 단순화) — 처음이에요/일반 흐름 ── */
+const POOL=[
+  {id:'warm',  name:'가벼운 관절 돌리기',     region:'공통', role:'warmup',   diff:1},
+  {id:'neck',  name:'목 옆으로 늘이기',       region:'목',   role:'main',     diff:1},
+  {id:'neck2', name:'목 앞으로 당기기',       region:'목',   role:'main',     diff:2},
+  {id:'sh',    name:'어깨 가로 당기기',       region:'어깨', role:'main',     diff:1},
+  {id:'sh2',   name:'어깨 으쓱 내리기',       region:'어깨', role:'main',     diff:2},
+  {id:'chest', name:'등 뒤 깍지 가슴 열기',   region:'가슴', role:'main',     diff:2},
+  {id:'chest2',name:'벽에 손 대고 가슴 열기', region:'가슴', role:'main',     diff:3},
+  {id:'cool',  name:'마무리 호흡 정리',       region:'공통', role:'cooldown', diff:1},
+];
+const FOCUS=['목','어깨','가슴'];   // 처음이에요 설문 기본 집중 부위
+const session={ level:2, resting:{}, history:[], todayMoves:[], nextLevel:2, sorePain:0, soreMoves:[] };
+
+/* 입력(레벨·회복상태) → 처리(필터·점수) → 출력(세트) */
+function buildSet(){
+  const lvl=session.level;
+  const avail=POOL.filter(m=>m.role==='main' && FOCUS.includes(m.region) && m.diff<=lvl && !session.resting[m.id]);
+  const picks=[]; const used=new Set();
+  FOCUS.forEach(reg=>{   // 부위별 1개 — 레벨 이하 중 가장 강한 동작
+    const c=avail.filter(m=>!used.has(m.id)&&m.region===reg).sort((a,b)=>b.diff-a.diff);
+    if(c[0]){ picks.push(c[0]); used.add(c[0].id); }
+  });
+  const warm=POOL.filter(m=>m.role==='warmup'), cool=POOL.filter(m=>m.role==='cooldown');
+  const seq=[];
+  warm.forEach(m=>seq.push({id:m.id,name:m.name,type:null,sec:30}));
+  picks.forEach(m=>seq.push({id:m.id,name:m.name,type:null,sec:30}));
+  cool.forEach(m=>seq.push({id:m.id,name:m.name,type:null,sec:20}));
+  return seq;
+}
 const FB=[
   {cls:'good',ic:I.leaf,t:'좋아요! 자세가 정확해요'},
   {cls:'good',ic:I.leaf,t:'호흡을 천천히 유지하세요'},
@@ -1277,6 +1409,7 @@ async function beginSession(){
     if(!window.poseEngine) throw new Error('engine-not-loaded');
     await window.poseEngine.init();        // 모델 + 카메라 (사용자 제스처 안에서 호출)
     recognitionEnabled=true;
+    SEQ=DEMO_SEQ;
     btn.disabled=false; btn.textContent='카메라 인식 시작';
     startStretching();
   }catch(e){
@@ -1287,11 +1420,13 @@ async function beginSession(){
   }
 }
 /* 인식 없이 진행하는 안전 폴백 */
-function runTimerMode(){ recognitionEnabled=false; document.getElementById('camError').classList.remove('show'); startStretching(); }
+function runTimerMode(){ recognitionEnabled=false; SEQ=DEMO_SEQ; document.getElementById('camError').classList.remove('show'); startStretching(); }
 
 function buildSegs(){const b=document.getElementById('segBar');b.innerHTML='';SEQ.forEach(()=>{const s=document.createElement('div');s.className='seg';s.innerHTML='<div class="fill"></div>';b.appendChild(s);});}
 
 function startStretching(){
+  device.classList.toggle('livecam', recognitionEnabled);   // 실제 카메라 활성 시에만 카메라 박스
+  session.todayMoves = SEQ.filter(m=>m.id && m.id!=='warm' && m.id!=='cool').map(m=>({id:m.id,name:m.name}));
   buildSegs(); curMove=0; loadMove(); go('stretching');
   if(recognitionEnabled && window.poseEngine && window.poseEngine.ready) window.poseEngine.start();
   play();
@@ -1310,7 +1445,7 @@ function loadMove(){
   }else{
     remain=m.sec; updateTimer();
     document.getElementById('timer').className='timer';
-    if(label) label.textContent= m.type? '● LIVE · 자세 인식 중' : '● 마무리 · 호흡에 집중하세요';
+    if(label) label.textContent = recognitionEnabled ? '● 마무리 · 호흡에 집중하세요' : '● 예시 화면 · 동작을 따라 해보세요';
     if(window.poseEngine) window.poseEngine.setMove(curMove, null);  // 채점 정지(피드만 표시)
   }
 }
@@ -1344,7 +1479,7 @@ function nextMove(){
   const seg=document.querySelectorAll('#segBar .seg')[curMove];
   if(seg){seg.classList.add('done');seg.querySelector('.fill').style.width='100%';}
   curMove++;
-  if(curMove>=SEQ.length){ stopTimer(); if(window.poseEngine)window.poseEngine.shutdown(); go('complete'); return; }
+  if(curMove>=SEQ.length){ stopTimer(); if(window.poseEngine)window.poseEngine.shutdown(); prepareComplete(); go('complete'); return; }
   loadMove(); if(playing)play();
 }
 /* 인식 엔진이 "유지 완료" 시 호출 (전역) */
@@ -1355,8 +1490,7 @@ function flash(){const f=document.getElementById('feedback');const p=FB[Math.flo
   f.className='feedback show '+p.cls;setTimeout(()=>f.classList.remove('show'),2200);}
 function exitStretching(){stopTimer();if(window.poseEngine)window.poseEngine.shutdown();go('home');}
 
-/* 통증 피드백 (완료 화면) — 기존 html 1~6 척도 + 레벨별 판정 로직 */
-const CUR_LEVEL=2;  // 프로필 레벨
+/* ════ 통증 피드백 → 세트 조정 (두번째 코드 플로우 이식: 입력·처리·출력) ════ */
 const PAIN_SCALE=[
   {n:1,label:'아프지 않다',zone:'z-low'},
   {n:2,label:'조금 아프다',zone:'z-ok'},
@@ -1365,6 +1499,11 @@ const PAIN_SCALE=[
   {n:5,label:'꽤 많이 아프다',zone:'z-high'},
   {n:6,label:'참기 힘들다',zone:'z-high'},
 ];
+const RECOVERY_DAYS={5:1,6:2};   // 통증 5→1일, 6→2일 회복(제외)
+const REC_BASE=new Date();
+function fmtRecordDate(dayNum){ const d=new Date(REC_BASE); d.setDate(d.getDate()+(dayNum-1)); return `${d.getMonth()+1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`; }
+
+/* 입력 — 통증 1~6 */
 function renderPainScale(){
   const box=document.getElementById('painScale'); box.innerHTML='';
   PAIN_SCALE.forEach(s=>{
@@ -1373,25 +1512,123 @@ function renderPainScale(){
     p.onclick=()=>{ [...box.children].forEach(x=>x.classList.remove('on')); p.classList.add('on'); evaluatePain(s.n); };
     box.appendChild(p);
   });
-  renderLevelTrack(CUR_LEVEL,'통증을 선택하면 내일 레벨이 조정돼요');
 }
-function evaluatePain(n){
-  const cur=CUR_LEVEL; let cls,title,msg,next=cur,label;
-  if(n===1){ cls='low'; title='자극이 약했어요'; msg='조금 더 강한 동작도 괜찮아요. 통증이 낮은 날이 이어지면 레벨을 한 단계 올립니다.'; next=Math.min(4,cur+1); label=cur===next?'레벨 유지':`${cur} → ${next}단계 검토`; }
-  else if(n===2){ cls='ok'; title='딱 적절했어요'; msg='지금 강도가 잘 맞아요. 레벨을 그대로 유지합니다.'; next=cur; label='레벨 유지'; }
-  else if(n===3){ cls='ok'; if(cur<=2){ title='약간 높았어요'; msg='지금 레벨엔 살짝 셌어요. 레벨은 유지하되 유지 시간을 조금 줄여 조절합니다.'; } else { title='적절했어요'; msg='이 레벨에선 정상 범위예요. 레벨을 유지합니다.'; } next=cur; label='레벨 유지'; }
-  else if(n===4){ cls='mid'; if(cur>=3){ title='적절했어요'; msg='높은 레벨에선 정상 범위입니다. 레벨을 유지합니다.'; } else { title='조금 높았어요'; msg='같은 레벨에서 더 쉬운 동작으로 강도를 낮춰 조절합니다.'; } next=cur; label='레벨 유지'; }
-  else { cls='high'; title='무리한 강도였어요'; msg='해당 동작을 제외하고 레벨을 한 단계 낮췄어요. 스트레칭은 약간 당기는 느낌까지만 하는 것이 원칙입니다.'; next=Math.max(1,cur-1); label=`${cur} → ${next}단계`; }
-  const v=document.getElementById('verdict');
-  v.className='verdict '+cls; v.style.display='block';
+/* 처리 1 — 통증→레벨 판정 + (통증4↑) 아팠던 동작 선택 노출 */
+function evaluatePain(pain){
+  const cur=session.level;
+  const okCeiling={1:2,2:3,3:4,4:4}[cur];
+  let cls,title,msg,next=cur;
+  if(pain===1){ cls='low'; title='자극이 다소 약했어요'; msg=`시작 레벨 ${cur}이 실제보다 낮은 것 같아요. 다음 루틴은 레벨 ${Math.min(4,cur+1)}로 올려 제안합니다.`; next=Math.min(4,cur+1); }
+  else if(pain<=okCeiling){ cls='ok'; title='딱 적절한 강도예요'; msg=`레벨 ${cur} 권장 범위 안이에요. 이 레벨을 유지합니다.`; next=cur; }
+  else if(pain<=4){ cls='mid'; title='강도가 살짝 높았어요'; msg=`'${PAIN_SCALE[pain-1].label}'는 레벨 ${cur}엔 다소 강해요. 같은 레벨에서 유지 시간·반복을 한 단계 낮춰 조절합니다.`; next=cur; }
+  else { cls='high'; title='⚠️ 통증이 강해요 — 즉시 중단'; msg=`'${PAIN_SCALE[pain-1].label}' 수준은 멈춤 신호예요. 아팠던 동작을 회복 기간 동안 제외하고 레벨을 한 단계 낮춥니다.`; next=Math.max(1,cur-1); }
+  const v=document.getElementById('verdict'); v.className='verdict '+cls; v.style.display='block';
   v.innerHTML=`<span class="vt">${title}</span>${msg}`;
-  renderLevelTrack(next,label);
+  renderLevelTrack(cur,next);
+  session.nextLevel=next; session.sorePain=pain;
+  if(pain>=4){ renderSorePicker(); document.getElementById('sorePick').style.display='block'; }
+  else { session.soreMoves=[]; document.getElementById('sorePick').style.display='none'; }
+  document.getElementById('nextBtn').style.display='block';
 }
-function renderLevelTrack(active,label){
+/* 입력 2 — 오늘 한 동작 중 아팠던 것 선택 (통증 4↑) */
+function renderSorePicker(){
+  const box=document.getElementById('soreList'); box.innerHTML=''; session.soreMoves=[];
+  (session.todayMoves||[]).forEach(m=>{
+    const it=document.createElement('div'); it.className='sore-item'; it.textContent=m.name; it.style.pointerEvents='';
+    it.onclick=()=>{ if(it.classList.toggle('on')) session.soreMoves.push(m.id); else session.soreMoves=session.soreMoves.filter(x=>x!==m.id); };
+    box.appendChild(it);
+  });
+}
+function renderLevelTrack(cur,next){
   let h='<span class="lt-label">조정</span>';
-  for(let l=1;l<=4;l++){ h+=`<div class="lvl-dot ${l===active?'cur':''}">${l}</div>`; if(l<4)h+='<span class="lvl-arrow">›</span>'; }
-  h+=`<span class="lvl-verdict">${label}</span>`;
+  for(let l=1;l<=4;l++){ h+=`<div class="lvl-dot ${l===next?'cur':''}">${l}</div>`; if(l<4)h+='<span class="lvl-arrow">›</span>'; }
+  h+=`<span class="lvl-verdict">${cur===next?'레벨 유지':`${cur} → ${next}단계`}</span>`;
   document.getElementById('lvlTrack').innerHTML=h;
+}
+
+/* 완료 화면 진입 시 초기화 + 통계 */
+function prepareComplete(){
+  const mins=Math.max(1,Math.round(SEQ.reduce((s,m)=>s+(m.sec||25),0)/60));
+  document.getElementById('cStatTime').textContent=mins+'분';
+  document.getElementById('cStatCount').textContent=(session.todayMoves.length||SEQ.length)+'개';
+  document.getElementById('cStatFocus').textContent= liveCam ? '목·어깨·가슴' : FOCUS.join('·');
+  document.getElementById('completeStreakTxt').textContent = freshMode ? '오늘 첫 세트 완료!' : '5일 연속 스트레칭 달성';
+  session.sorePain=0; session.soreMoves=[];
+  document.getElementById('verdict').style.display='none';
+  document.getElementById('sorePick').style.display='none';
+  document.getElementById('nextBtn').style.display='none';
+  const ns=document.getElementById('nextSet'); ns.className='next-set'; ns.innerHTML='';
+  document.getElementById('painScale').style.pointerEvents='';
+  renderPainScale();
+  renderLevelTrack(session.level, session.level);
+}
+
+/* 처리 2 + 출력 — 기록 저장(+날짜) · 회복 · 레벨/회차 +1 · 다음 세트 재구성 */
+function advanceDay(){
+  if(session.sorePain===0) return;
+  const dayNum=session.history.length+1;
+  const dateStr=fmtRecordDate(dayNum);
+  const prevNames=(session.todayMoves||[]).map(m=>m.name);
+  // ① 기록 저장 (날짜 반영)
+  session.history.push({day:dayNum,date:dateStr,level:session.level,pain:session.sorePain,count:session.todayMoves.length});
+  // ② 회복 카운터 1일 감소 (이전에 쉬던 동작 복귀)
+  Object.keys(session.resting).forEach(id=>{ session.resting[id]-=1; if(session.resting[id]<=0) delete session.resting[id]; });
+  // ③ 통증 5~6 → 오늘 아팠던 동작을 회복 기간 동안 제외(다음 세트부터)
+  if(session.sorePain>=5){
+    const days=RECOVERY_DAYS[session.sorePain];
+    const targets=session.soreMoves.length?session.soreMoves:session.todayMoves.map(m=>m.id);
+    targets.forEach(id=>{ session.resting[id]=days; });
+  }
+  // ④ 레벨 반영 + ⑤ 다음 세트 재구성
+  const prevLevel=session.level; session.level=session.nextLevel;
+  SEQ=buildSet();                                   // 다음(내일) 세트
+  const nextNames=session.todayMoves.map(m=>m.name);
+  renderNextSet(dayNum, prevLevel, session.level, prevNames, nextNames);
+  device.classList.add('has-records');
+  renderHistory(); refreshDayLabels();
+  document.getElementById('nextBtn').style.display='none';
+  document.getElementById('painScale').style.pointerEvents='none';
+  [...document.querySelectorAll('#soreList .sore-item')].forEach(it=>it.style.pointerEvents='none');
+}
+/* 출력 — 내일 세트가 어떻게 바뀌었는지 */
+function renderNextSet(dayNum,prevLevel,newLevel,prevNames,nextNames){
+  const el=document.getElementById('nextSet');
+  const removed=prevNames.filter(n=>!nextNames.includes(n));
+  const added=nextNames.filter(n=>!prevNames.includes(n));
+  const reason=[];
+  if(newLevel>prevLevel) reason.push(`레벨 ${prevLevel}→${newLevel} 상향`);
+  else if(newLevel<prevLevel) reason.push(`레벨 ${prevLevel}→${newLevel} 하향`);
+  else reason.push(`레벨 ${newLevel} 유지`);
+  if(removed.length) reason.push(`아팠던 동작 ${removed.length}개 제외(회복)`);
+  else if(newLevel===prevLevel && session.sorePain>=3) reason.push('유지 시간·반복 한 단계 감소');
+  let rows=nextNames.map(n=>{
+    const isAdd=added.includes(n);
+    return `<div class="ns-move ${isAdd?'added':''}"><span class="dot2"></span><span class="nm-name">${n}</span>${isAdd?'<span class="ns-tag">신규</span>':''}</div>`;
+  }).join('');
+  rows+=removed.map(n=>`<div class="ns-move removed"><span class="dot2"></span><span class="nm-name">${n}</span><span class="ns-tag">제외</span></div>`).join('');
+  el.innerHTML=`<div class="ns-h">기록 +1 · 내일은 <b>DAY ${dayNum+1}</b> 세트예요</div>
+    <div class="ns-reason">${reason.join(' · ')} → 다음 세트를 자동으로 다시 구성했어요.</div>${rows}`;
+  el.classList.add('show');
+}
+/* 기록 탭 — 날짜별 진행 기록 */
+function resetSession(){
+  session.level=2; session.nextLevel=2; session.resting={}; session.history=[];
+  session.todayMoves=[]; session.sorePain=0; session.soreMoves=[];
+  device.classList.remove('has-records');
+  const hc=document.getElementById('histCard'); if(hc) hc.style.display='none';
+}
+/* 기록 탭 — 날짜별 진행 기록 */
+function renderHistory(){
+  const card=document.getElementById('histCard'), list=document.getElementById('histList');
+  if(!session.history.length){ card.style.display='none'; return; }
+  card.style.display='block';
+  list.innerHTML=session.history.slice().reverse().map(h=>{
+    const pc=h.pain<=3?'p-low':h.pain<=4?'p-mid':'p-high';
+    return `<div class="hist-row">
+      <div class="hist-ico"><svg viewBox="0 0 24 24"><path d="M5 20C4 11 10 4 20 4c0 10-7 16-15 15.5l5-8.5-3.5 2.5z"/></svg></div>
+      <div class="hist-date"><div class="hr-d">${h.date}</div><div class="hr-s">DAY ${h.day} · 레벨 ${h.level} · ${h.count}개 동작</div></div>
+      <div class="hist-pain ${pc}">통증 ${h.pain}</div></div>`;
+  }).join('');
 }
 renderPainScale();
 applyMode();
@@ -1410,6 +1647,8 @@ const video  = document.getElementById("poseVideo");
 const canvas = document.getElementById("poseCanvas");
 const ctx    = canvas.getContext("2d");
 const loadingEl = document.getElementById("poseLoading");
+const demoCanvas = document.getElementById("demoCanvas");
+const demoCtx = demoCanvas ? demoCanvas.getContext("2d") : null;
 
 const IDX = { NOSE:0, LEFT_EAR:7, RIGHT_EAR:8, LEFT_SHOULDER:11, RIGHT_SHOULDER:12,
   LEFT_ELBOW:13, RIGHT_ELBOW:14, LEFT_WRIST:15, RIGHT_WRIST:16, LEFT_HIP:23, RIGHT_HIP:24 };
@@ -1459,6 +1698,25 @@ function drawUpperSkeleton(lm){
   for(const i of [0,7,8,11,12,13,14,15,16,23,24]){ if(!visible(lm[i])) continue; const p=toCanvasPoint(lm[i]);
     ctx.globalAlpha=faceSet.has(i)?0.85:0.42; ctx.beginPath(); ctx.arc(p.x,p.y,faceSet.has(i)?6:5,0,Math.PI*2); ctx.fill(); }
   ctx.restore();
+}
+
+/* ── 동작 예시 아바타 (첫번째 코드 demo-card 이식, 앱 잉크색) ── */
+function drawMiniDemo(type){
+  if(!demoCtx) return;
+  const c=demoCanvas, g=demoCtx;
+  c.width=180; c.height=212;
+  g.clearRect(0,0,c.width,c.height);
+  g.save();
+  if(targetSide==="left"){ g.translate(c.width,0); g.scale(-1,1); }
+  g.strokeStyle="#393b33"; g.fillStyle="#393b33"; g.lineWidth=8; g.lineCap="round"; g.lineJoin="round";
+  const line=(a,b)=>{ g.beginPath(); g.moveTo(a[0],a[1]); g.lineTo(b[0],b[1]); g.stroke(); };
+  const head=p=>{ g.beginPath(); g.arc(p[0],p[1],18,0,Math.PI*2); g.stroke(); };
+  let p;
+  if(type==="neckSide"){ p={h:[78,38],n:[88,62],ls:[58,82],rs:[122,82],le:[48,122],lw:[46,154],re:[142,52],rw:[103,38],hip:[90,146],lk:[72,196],rk:[108,196]}; }
+  else if(type==="crossBody"){ p={h:[90,38],n:[90,64],ls:[58,84],rs:[122,84],le:[100,90],lw:[138,96],re:[136,124],rw:[150,150],hip:[90,146],lk:[72,196],rk:[108,196]}; }
+  else { p={h:[90,38],n:[90,64],ls:[58,84],rs:[122,84],le:[46,124],lw:[72,146],re:[134,124],rw:[108,146],hip:[90,148],lk:[72,196],rk:[108,196]}; }
+  head(p.h); line(p.h,p.n); line(p.ls,p.rs); line(p.n,p.hip); line(p.ls,p.le); line(p.le,p.lw); line(p.rs,p.re); line(p.re,p.rw); line(p.hip,p.lk); line(p.hip,p.rk);
+  g.restore();
 }
 
 /* ── 가시성/동작별 채점 (프로토타입 동일) ── */
@@ -1620,6 +1878,7 @@ window.poseEngine = {
   init,
   setMove(index, move){
     curIdx=index; curMove=move; holdSec=0; lastTs=0; fired=false;
+    drawMiniDemo(move ? move.type : null);   // 오른쪽 상단 동작 예시 갱신
     if(move && move.type){
       setAccuracy(0,false);
       setFeedback("자세를 인식하는 중입니다…", true);
