@@ -22,23 +22,23 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;}
 body{
-  background:#eceef1;font-family:'Gowun Dodum',sans-serif;color:var(--ink);
-  line-height:1.65;display:flex;align-items:center;justify-content:center;
-  min-height:100vh;padding:24px;
+  background:var(--bg);font-family:'Gowun Dodum',sans-serif;color:var(--ink);
+  line-height:1.65;display:flex;align-items:stretch;justify-content:center;
+  min-height:100vh;padding:0;
 }
 svg{display:block;}
 
-/* iPhone 17 프레임 (402 × 874pt) */
+/* 베젤 없는(풀스크린) 버전 — 프레임/노치/가짜 상태바 제거 */
 .device{
-  position:relative;width:402px;height:874px;background:var(--bg);
-  border-radius:52px;box-shadow:0 0 0 12px #1b1d18,0 0 0 14px #2c2f26,0 30px 70px rgba(0,0,0,.35);
+  position:relative;width:100%;max-width:440px;height:100vh;height:100dvh;
+  margin:0 auto;background:var(--bg);
+  border-radius:0;box-shadow:none;
   overflow:hidden;display:flex;flex-direction:column;
 }
-.island{position:absolute;top:12px;left:50%;transform:translateX(-50%);
-  width:118px;height:34px;background:#111;border-radius:20px;z-index:60;}
-.status-bar{height:54px;flex:0 0 54px;display:flex;align-items:flex-end;justify-content:space-between;
-  padding:0 26px 8px;font-size:14px;font-weight:700;z-index:55;letter-spacing:.02em;}
-.status-bar .sb-right{display:flex;gap:6px;align-items:center;font-size:13px;}
+.island{display:none;}
+.status-bar{height:env(safe-area-inset-top,0px);min-height:0;flex:0 0 auto;
+  padding:0;overflow:hidden;}
+.status-bar span{display:none;}
 .device.stretch-active .status-bar{background:#1d2018;color:#f3f4ee;}
 
 .viewport{flex:1;position:relative;overflow:hidden;}
@@ -566,17 +566,6 @@ button.ghost:hover{color:var(--ink);}
 .hist-pain.p-low{background:var(--accent-soft);color:var(--accent-deep);}
 .hist-pain.p-mid{background:rgba(223,148,66,.16);color:var(--warn);}
 .hist-pain.p-high{background:rgba(221,95,95,.14);color:var(--danger);}
-</style>
-<style>
-/* === LIVE 전체화면 데모 모드 (베젤·가짜 상태바·배경 제거) === */
-html,body{margin:0;padding:0;height:100%;}
-body{background:#fff;display:block;min-height:100vh;min-height:100dvh;padding:0;}
-.device{position:relative;width:100vw;height:100vh;height:100dvh;min-height:100dvh;max-width:none;
-  border-radius:0;box-shadow:none;}
-.island{display:none;}
-.status-bar{height:env(safe-area-inset-top,0px);min-height:0;flex:0 0 auto;padding:0;background:transparent;}
-.status-bar>span{display:none;}
-.tabbar{bottom:calc(18px + env(safe-area-inset-bottom,0px));}
 </style>
 </head>
 <body>
@@ -1351,12 +1340,16 @@ document.querySelectorAll('.survey-chips').forEach(g=>{
    recognized 동작(type 有)은 카메라+MediaPipe 로 실시간 인식,
    정확도 측정 후 자세를 holdGoal 만큼 유지하면 자동으로 다음 동작으로 넘어감.
    type 가 없는 동작(마무리 호흡)과 타이머 모드(recognitionEnabled=false)는 기존 카운트다운으로 진행. */
-/* 데모(실제 카메라) 전용 고정 세트 — 인식 가능한 3개 + 호흡 */
+/* 데모(실제 카메라) 전용 고정 세트 — 두번째 코드(프로토타입)가 검증한 인식 동작 3개 + 호흡
+   · side          : 방향 인식 기준(두번째 코드 채점 로직이 좌/우를 구분해 판정)
+   · threshold     : 이 내부 점수(raw) 이상이면 '정확' 판정 → 유지 시작
+   · goodRawScore  : 화면 정확도 보정 기준점(raw 이 값일 때 화면 90%로 표시)
+   · holdGoal      : 정확 자세를 이 시간(초)만큼 유지하면 자동으로 다음 동작 */
 const DEMO_SEQ=[
-  {id:'neck',  name:'목 옆으로 늘이기',   type:'neckSide',  threshold:0.66, holdGoal:1.3, sec:35},
-  {id:'sh',    name:'어깨 가로 당기기',   type:'crossBody', threshold:0.62, holdGoal:1.3, sec:35},
-  {id:'chest', name:'등 뒤 깍지 가슴 열기', type:'chestOpen', threshold:0.58, holdGoal:1.3, sec:35},
-  {id:'cool',  name:'마무리 호흡 정리',   type:null, sec:20},
+  {id:'neck', name:'목 옆으로 늘이기',          type:'neckSide',               side:'right', threshold:0.80, goodRawScore:0.80, holdGoal:1.5, sec:35},
+  {id:'sh',   name:'어깨 가로 당기기',          type:'crossBody',              side:'right', threshold:0.72, goodRawScore:0.72, holdGoal:1.5, sec:35},
+  {id:'side', name:'목 뒤 손 올리고 옆구리 늘리기', type:'handsBehindHeadSideBend', side:'right', threshold:0.78, goodRawScore:0.78, holdGoal:1.5, sec:35},
+  {id:'cool', name:'마무리 호흡 정리',          type:null, sec:20},
 ];
 let SEQ = DEMO_SEQ;   // 진입 모드에 따라 교체
 
@@ -1551,7 +1544,7 @@ function prepareComplete(){
   const mins=Math.max(1,Math.round(SEQ.reduce((s,m)=>s+(m.sec||25),0)/60));
   document.getElementById('cStatTime').textContent=mins+'분';
   document.getElementById('cStatCount').textContent=(session.todayMoves.length||SEQ.length)+'개';
-  document.getElementById('cStatFocus').textContent= liveCam ? '목·어깨·가슴' : FOCUS.join('·');
+  document.getElementById('cStatFocus').textContent= liveCam ? '목·어깨·옆구리' : FOCUS.join('·');
   document.getElementById('completeStreakTxt').textContent = freshMode ? '오늘 첫 세트 완료!' : '5일 연속 스트레칭 달성';
   session.sorePain=0; session.soreMoves=[];
   document.getElementById('verdict').style.display='none';
@@ -1635,9 +1628,12 @@ applyMode();
 </script>
 
 <!-- ════════════════════════════════════════════════════════════
-     자세 인식 엔진 (upper_body_stretch_mode_prototype.html 의 동작 로직 이식)
-     - MediaPipe PoseLandmarker 로 상반신 인식
-     - neckSide / crossBody / chestOpen 3개 동작 채점
+     자세 인식 엔진 (두번째 코드 index.html 의 인식 구현 이식 · 정확도 보강)
+     - MediaPipe PoseLandmarker(lite) 로 상반신 인식
+     - 방향(좌/우) 인식 채점: neckSide / crossBody / handsBehindHeadSideBend
+     - 검출은 다운스케일 캔버스에서 일정 간격(throttle)으로 수행 → 떨림↓·안정성↑
+     - 내부 raw 점수를 화면 정확도(%)로 보정(goodRawScore→90%)해 표시
+     - 표시 방식(영상을 캔버스에 그려 object-fit) · 색감 · UI 는 첫번째 코드 유지
      - window.poseEngine 로 비모듈 스크립트(화면 흐름)와 연결
    ════════════════════════════════════════════════════════════ -->
 <script type="module">
@@ -1650,21 +1646,34 @@ const loadingEl = document.getElementById("poseLoading");
 const demoCanvas = document.getElementById("demoCanvas");
 const demoCtx = demoCanvas ? demoCanvas.getContext("2d") : null;
 
+/* 검출 전용(다운스케일) 캔버스 — 표시용 캔버스와 분리 (두번째 코드 방식) */
+const detectCanvas = document.createElement("canvas");
+const detectCtx = detectCanvas.getContext("2d", { alpha:false });
+
+const $ = id => document.getElementById(id);
+
 const IDX = { NOSE:0, LEFT_EAR:7, RIGHT_EAR:8, LEFT_SHOULDER:11, RIGHT_SHOULDER:12,
   LEFT_ELBOW:13, RIGHT_ELBOW:14, LEFT_WRIST:15, RIGHT_WRIST:16, LEFT_HIP:23, RIGHT_HIP:24 };
 const UPPER_CONNECTIONS = [[0,7],[0,8],[7,11],[8,12],[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24]];
 const MIRROR_VIEW = true;
 
+/* ── 정확도 표시 / 검출 제어 상수 (두번째 코드) ── */
+const DISPLAY_TARGET_SCORE   = 0.90;   // goodRawScore 도달 시 화면 90% 로 보정 표시
+const ALMOST_SCORE_THRESHOLD = 0.75;   // 화면상 '거의 다 옴'(노란색) 표시 기준
+const PROCESS_INTERVAL_MS    = 130;    // 검출 주기(ms) — 잦은 검출로 인한 떨림 방지
+const DETECT_CANVAS_WIDTH    = 256;    // 검출 입력 가로 해상도(다운스케일)
+
 /* ── 엔진 상태 ── */
 let poseLandmarker = null;
 let running = false, paused = false, initialized = false;
-let curIdx = -1, curMove = null;     // 현재 인식 대상 동작
-let holdSec = 0, lastTs = 0, lastVideoTime = -1, fired = false;
-let latestDisplayLandmarks = null;
-let targetSide = "right";
-let calibration = null;
+let curIdx = -1, curMove = null;                  // 현재 인식 대상 동작
+let targetSide = "right";                          // 동작별 좌/우 판정 기준
+let holdSec = 0, lastTs = 0, lastVideoTime = -1, lastDetectionTs = 0, fired = false;
+let latestRawLandmarks = null, latestDisplayLandmarks = null;
+let calibration = null;                            // 목 중립 각도(없으면 0 기준 — 두번째 코드 동일)
+let loopSerial = 0;                                // 단일 loop 보장(중복 루프 방지)
 
-/* ── 수학/유틸 (프로토타입 동일) ── */
+/* ── 수학/유틸 (두번째 코드 동일) ── */
 const clamp01 = v => Math.max(0, Math.min(1, v));
 const visible = (p, min=0.32) => p && (p.visibility === undefined || p.visibility >= min);
 const displayLandmarks = raw => raw.map(p => ({ x: MIRROR_VIEW ? 1-p.x : p.x, y:p.y, z:p.z??0, visibility:p.visibility??1 }));
@@ -1684,10 +1693,21 @@ function normalizedBasis(lm){
   const torso = Math.max(dist(shoulderMid,hipMid),0.22);
   return { ls,rs,lh,rh,shoulderMid,hipMid,shoulderW,torso };
 }
+/* raw 내부 점수 → 화면 표시 정확도 보정 (raw=goodRawScore 일 때 90%) */
+function getDisplayScore(rawScore){
+  const goodRaw = (curMove && (curMove.goodRawScore ?? curMove.threshold)) || DISPLAY_TARGET_SCORE;
+  return clamp01(rawScore * DISPLAY_TARGET_SCORE / goodRaw);
+}
 
-/* ── 그리기 ── */
+/* ── 그리기 (표시용 캔버스에 영상 + 스켈레톤; 색감은 앱 톤 유지) ── */
 function drawVideo(){ ctx.save(); if(MIRROR_VIEW){ ctx.translate(canvas.width,0); ctx.scale(-1,1);} ctx.drawImage(video,0,0,canvas.width,canvas.height); ctx.restore(); }
 function resizeCanvas(){ const w=video.videoWidth||720, h=video.videoHeight||1280; if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; } }
+function prepareDetectCanvas(){
+  const vw=video.videoWidth||720, vh=video.videoHeight||1280;
+  const w=DETECT_CANVAS_WIDTH, h=Math.round(w*(vh/vw));
+  if(detectCanvas.width!==w||detectCanvas.height!==h){ detectCanvas.width=w; detectCanvas.height=h; }
+  detectCtx.drawImage(video,0,0,detectCanvas.width,detectCanvas.height);   // 원본(비반전) 영상으로 검출
+}
 function drawUpperSkeleton(lm){
   ctx.save(); ctx.strokeStyle="#cfe88a"; ctx.fillStyle="#cfe88a"; ctx.lineWidth=4; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.setLineDash([10,9]);
   const faceSet=new Set([IDX.NOSE,IDX.LEFT_EAR,IDX.RIGHT_EAR]);
@@ -1700,26 +1720,32 @@ function drawUpperSkeleton(lm){
   ctx.restore();
 }
 
-/* ── 동작 예시 아바타 (첫번째 코드 demo-card 이식, 앱 잉크색) ── */
-function drawMiniDemo(type){
+/* ── 동작 예시 아바타 (두번째 코드 demo-card 이식 · 좌우 방향 반영, 앱 잉크색) ── */
+function drawMiniDemo(type, side="right"){
   if(!demoCtx) return;
   const c=demoCanvas, g=demoCtx;
   c.width=180; c.height=212;
   g.clearRect(0,0,c.width,c.height);
   g.save();
-  if(targetSide==="left"){ g.translate(c.width,0); g.scale(-1,1); }
+  g.translate(c.width,0); g.scale(-1,1);          // 셀피(좌우반전) 화면과 같은 방향으로 예시 표시
   g.strokeStyle="#393b33"; g.fillStyle="#393b33"; g.lineWidth=8; g.lineCap="round"; g.lineJoin="round";
   const line=(a,b)=>{ g.beginPath(); g.moveTo(a[0],a[1]); g.lineTo(b[0],b[1]); g.stroke(); };
   const head=p=>{ g.beginPath(); g.arc(p[0],p[1],18,0,Math.PI*2); g.stroke(); };
   let p;
-  if(type==="neckSide"){ p={h:[78,38],n:[88,62],ls:[58,82],rs:[122,82],le:[48,122],lw:[46,154],re:[142,52],rw:[103,38],hip:[90,146],lk:[72,196],rk:[108,196]}; }
-  else if(type==="crossBody"){ p={h:[90,38],n:[90,64],ls:[58,84],rs:[122,84],le:[100,90],lw:[138,96],re:[136,124],rw:[150,150],hip:[90,146],lk:[72,196],rk:[108,196]}; }
-  else { p={h:[90,38],n:[90,64],ls:[58,84],rs:[122,84],le:[46,124],lw:[72,146],re:[134,124],rw:[108,146],hip:[90,148],lk:[72,196],rk:[108,196]}; }
+  if(type==="neckSide"){
+    p={h:[103,38],n:[92,62],ls:[58,82],rs:[122,82],le:[48,122],lw:[46,154],re:[142,52],rw:[112,38],hip:[90,146],lk:[72,196],rk:[108,196]};
+  } else if(type==="crossBody"){
+    p={h:[90,38],n:[90,64],ls:[58,84],rs:[122,84],le:[100,90],lw:[138,96],re:[136,124],rw:[150,150],hip:[90,146],lk:[72,196],rk:[108,196]};
+  } else {  // handsBehindHeadSideBend
+    p={h:[105,38],n:[98,64],ls:[66,84],rs:[130,88],le:[42,54],lw:[70,42],re:[154,58],rw:[126,42],hip:[90,148],lk:[72,196],rk:[108,196]};
+  }
+  const sideForAvatar = type==="neckSide" ? (side==="right"?"left":"right") : side;
+  if(sideForAvatar==="left"){ for(const k of Object.keys(p)){ p[k]=[180-p[k][0], p[k][1]]; } }
   head(p.h); line(p.h,p.n); line(p.ls,p.rs); line(p.n,p.hip); line(p.ls,p.le); line(p.le,p.lw); line(p.rs,p.re); line(p.re,p.rw); line(p.hip,p.lk); line(p.hip,p.rk);
   g.restore();
 }
 
-/* ── 가시성/동작별 채점 (프로토타입 동일) ── */
+/* ── 가시성/동작별 채점 (두번째 코드 채점 로직 이식 · 방향 인식) ── */
 function scoreUpperVisibility(lm){
   const required=[IDX.NOSE,IDX.LEFT_SHOULDER,IDX.RIGHT_SHOULDER];
   const optional=[IDX.LEFT_EAR,IDX.RIGHT_EAR,IDX.LEFT_ELBOW,IDX.RIGHT_ELBOW,IDX.LEFT_HIP,IDX.RIGHT_HIP];
@@ -1729,88 +1755,128 @@ function scoreUpperVisibility(lm){
 }
 function scoreNeckSide(lm){
   const b=normalizedBasis(lm); const bucket={sum:0,weight:0};
-  const shoulderAngle=lineAngle(b.ls,b.rs); const earAngle=lineAngle(lm[IDX.LEFT_EAR],lm[IDX.RIGHT_EAR]); const nose=lm[IDX.NOSE];
-  const shoulderStable=shoulderAngle===null?null:clamp01(1-Math.abs(shoulderAngle)/22); addScore(bucket,shoulderStable,0.28);
+  const shoulderAngle=lineAngle(b.ls,b.rs);
+  const earAngle=lineAngle(lm[IDX.LEFT_EAR],lm[IDX.RIGHT_EAR]);
+  const nose=lm[IDX.NOSE];
+  const shoulderStable=shoulderAngle===null?null:clamp01(1-Math.abs(shoulderAngle)/22);
+  addScore(bucket,shoulderStable,0.25);
   let tiltScore=null;
-  if(earAngle!==null&&shoulderAngle!==null){ const cur=signedAngleDiff(earAngle,shoulderAngle); const neutral=calibration?.headDiff??0;
-    tiltScore=rangeScore(Math.abs(signedAngleDiff(cur,neutral)),12,38,16); }
-  let noseShiftScore=null;
-  if(visible(nose)&&visible(b.ls)&&visible(b.rs)){ const shift=Math.abs((nose.x-b.shoulderMid.x)/b.shoulderW); noseShiftScore=rangeScore(shift,0.08,0.45,0.18); }
-  addScore(bucket,Math.max(tiltScore??0,noseShiftScore??0),0.52);
-  if(visible(nose)){ const headHeight=(b.shoulderMid.y-nose.y)/b.torso; addScore(bucket,rangeScore(headHeight,0.32,0.92,0.25),0.20); }
+  if(earAngle!==null&&shoulderAngle!==null){
+    const currentHeadDiff=signedAngleDiff(earAngle,shoulderAngle);
+    const neutralHeadDiff=calibration?.headDiff??0;
+    const tiltMagnitude=Math.abs(signedAngleDiff(currentHeadDiff,neutralHeadDiff));
+    tiltScore=rangeScore(tiltMagnitude,10,42,18);
+  }
+  let directionalShiftScore=null;
+  if(visible(nose)&&visible(b.ls)&&visible(b.rs)){
+    const signedShift=(nose.x-b.shoulderMid.x)/b.shoulderW;
+    const targetShift=targetSide==="right"?signedShift:-signedShift;
+    directionalShiftScore=rangeScore(targetShift,0.06,0.50,0.22);
+  }
+  addScore(bucket,directionalShiftScore,0.42);
+  addScore(bucket,tiltScore,0.25);
+  if(visible(nose)){ const headHeight=(b.shoulderMid.y-nose.y)/b.torso; addScore(bucket,rangeScore(headHeight,0.32,0.92,0.25),0.08); }
   const score=bucket.weight?bucket.sum/bucket.weight:0;
-  return { score:0.15*scoreUpperVisibility(lm)+0.85*score,
-    main: score>=0.66?"좋아요! 목 기울임이 인식됐어요":"고개를 더 천천히 옆으로 기울여보세요" };
+  const dir=targetSide==="right"?"오른쪽":"왼쪽";
+  return {
+    score: 0.15*scoreUpperVisibility(lm)+0.85*score,
+    main: `${dir} 방향으로 고개를 더 천천히 기울여보세요`,
+    sub: "손을 얹은 방향으로 고개를 기울이고, 어깨는 과하게 올라가지 않게 유지해주세요."
+  };
 }
 function scoreCrossBody(lm){
   const b=normalizedBasis(lm);
-  function armAcrossScore(shoulder,elbow,wrist,direction){
-    const local={sum:0,weight:0}; if(!visible(shoulder)||!visible(elbow)) return 0;
-    const elbowHeight=Math.abs((elbow.y-b.shoulderMid.y)/b.torso);
-    const elbowAcross=direction==="right"?(elbow.x-b.shoulderMid.x)/b.shoulderW:(b.shoulderMid.x-elbow.x)/b.shoulderW;
-    const upperArmHorizontal=lineAngle(shoulder,elbow);
-    const horizontal=upperArmHorizontal===null?null:clamp01(1-Math.min(Math.abs(upperArmHorizontal),Math.abs(Math.abs(upperArmHorizontal)-180))/35);
-    addScore(local,rangeScore(elbowHeight,0.00,0.38,0.22),0.25);
-    addScore(local,rangeScore(elbowAcross,0.08,1.25,0.50),0.38);
-    addScore(local,horizontal,0.22);
-    if(visible(wrist)){
-      const wristAcross=direction==="right"?(wrist.x-b.shoulderMid.x)/b.shoulderW:(b.shoulderMid.x-wrist.x)/b.shoulderW;
-      const wristHeight=Math.abs((wrist.y-b.shoulderMid.y)/b.torso);
-      addScore(local,rangeScore(wristAcross,0.30,1.75,0.55),0.10);
-      addScore(local,rangeScore(wristHeight,0.00,0.48,0.24),0.05);
+  function evaluateArm(activeShoulder, activeElbow, direction){
+    const local={sum:0,weight:0};
+    if(!visible(activeShoulder)||!visible(activeElbow)) return 0;
+    const acrossFromShoulder = direction==="toRight"
+      ? (activeElbow.x-activeShoulder.x)/b.shoulderW
+      : (activeShoulder.x-activeElbow.x)/b.shoulderW;
+    addScore(local,rangeScore(acrossFromShoulder,0.08,1.20,0.58),0.45);
+    const elbowHeight=Math.abs((activeElbow.y-b.shoulderMid.y)/b.torso);
+    addScore(local,rangeScore(elbowHeight,0.00,0.58,0.30),0.30);
+    const upperArmAngle=lineAngle(activeShoulder,activeElbow);
+    if(upperArmAngle!==null){
+      const expected = direction==="toRight"?0:180;
+      addScore(local,clamp01(1-angleDiff(upperArmAngle,expected)/60),0.25);
     }
     return local.weight?local.sum/local.weight:0;
   }
-  const leftToRight=armAcrossScore(lm[IDX.LEFT_SHOULDER],lm[IDX.LEFT_ELBOW],lm[IDX.LEFT_WRIST],"right");
-  const rightToLeft=armAcrossScore(lm[IDX.RIGHT_SHOULDER],lm[IDX.RIGHT_ELBOW],lm[IDX.RIGHT_WRIST],"left");
-  const armScore=Math.max(leftToRight,rightToLeft);
+  const rightArmPulled=evaluateArm(lm[IDX.RIGHT_SHOULDER],lm[IDX.RIGHT_ELBOW],"toRight");
+  const leftArmPulled =evaluateArm(lm[IDX.LEFT_SHOULDER], lm[IDX.LEFT_ELBOW], "toLeft");
+  // 셀피(좌우반전) 표시 기준에 맞춰, 사용자가 보는 오른팔/왼팔로 보정 (두번째 코드 동일)
+  const userRightArmScore=leftArmPulled;
+  const userLeftArmScore =rightArmPulled;
+  const finalArmScore = targetSide==="right"?userRightArmScore:userLeftArmScore;
   const shoulderAngle=lineAngle(b.ls,b.rs);
-  const shoulderStable=shoulderAngle===null?0:clamp01(1-Math.abs(shoulderAngle)/26);
-  const score=0.12*scoreUpperVisibility(lm)+0.72*armScore+0.16*shoulderStable;
-  return { score, main: score>=0.62?"좋아요! 팔이 가슴 앞으로 잘 넘어왔어요":"한쪽 팔꿈치를 가슴 중앙 쪽으로 더 가져와보세요" };
+  const shoulderStable=shoulderAngle===null?0:clamp01(1-Math.abs(shoulderAngle)/35);
+  const score=0.08*scoreUpperVisibility(lm)+0.84*finalArmScore+0.08*shoulderStable;
+  const dir=targetSide==="right"?"오른팔":"왼팔";
+  return { score, main:`${dir} 팔꿈치를 반대쪽 어깨 방향으로 더 가져와보세요`, sub:"당겨지는 팔의 팔꿈치 높이와 윗팔 방향을 중심으로 판단합니다." };
 }
-function scoreChestOpen(lm){
+function scoreHandsBehindHeadSideBend(lm){
   const b=normalizedBasis(lm); const bucket={sum:0,weight:0};
   const shoulderAngle=lineAngle(b.ls,b.rs);
-  const shoulderStable=shoulderAngle===null?null:clamp01(1-Math.abs(shoulderAngle)/28);
-  addScore(bucket,shoulderStable,0.30);
-  function upperArmOpen(shoulder,elbow,side){
+  const torsoShift = targetSide==="right"
+    ? (b.shoulderMid.x-b.hipMid.x)/b.shoulderW
+    : (b.hipMid.x-b.shoulderMid.x)/b.shoulderW;
+  const directionLeanScore=rangeScore(torsoShift,0.04,0.70,0.32);
+  const waistBendAmount=Math.abs((b.shoulderMid.x-b.hipMid.x)/b.shoulderW);
+  const waistBendScore=rangeScore(waistBendAmount,0.08,0.78,0.35);
+  const torsoAngle=lineAngle(b.hipMid,b.shoulderMid);
+  const torsoAngleFromVertical=torsoAngle===null?null:Math.abs(angleDiff(torsoAngle,-90));
+  const torsoAngleScore=rangeScore(torsoAngleFromVertical,6,38,18);
+  addScore(bucket,directionLeanScore,0.32);
+  addScore(bucket,waistBendScore,0.24);
+  addScore(bucket,torsoAngleScore,0.14);
+  const shoulderTilt=shoulderAngle===null?null:Math.abs(shoulderAngle);
+  const shoulderTiltScore=rangeScore(shoulderTilt,4,30,17);
+  addScore(bucket,shoulderTiltScore,0.12);
+  function elbowOpenScore(shoulder,elbow,side){
     if(!visible(shoulder)||!visible(elbow)) return null;
-    const drop=(elbow.y-shoulder.y)/b.torso; const lateral=Math.abs((elbow.x-shoulder.x)/b.shoulderW);
-    const armLine=lineAngle(shoulder,elbow); const expected=side==="left"?115:65;
-    const lineScore=armLine===null?null:clamp01(1-angleDiff(armLine,expected)/85);
     const local={sum:0,weight:0};
-    addScore(local,rangeScore(drop,0.16,0.82,0.30),0.55);
-    addScore(local,rangeScore(lateral,0.00,0.88,0.40),0.25);
-    addScore(local,lineScore,0.20);
+    const lateral = side==="left" ? (shoulder.x-elbow.x)/b.shoulderW : (elbow.x-shoulder.x)/b.shoulderW;
+    addScore(local,rangeScore(lateral,0.05,1.15,0.45),0.45);
+    const elbowRelY=(shoulder.y-elbow.y)/b.torso;
+    addScore(local,rangeScore(elbowRelY,-0.18,0.38,0.28),0.35);
+    const upperArmAngle=lineAngle(shoulder,elbow);
+    if(upperArmAngle!==null){ const expected=side==="left"?180:0; addScore(local,clamp01(1-angleDiff(upperArmAngle,expected)/65),0.20); }
     return local.weight?local.sum/local.weight:null;
   }
-  const leftArm=upperArmOpen(b.ls,lm[IDX.LEFT_ELBOW],"left");
-  const rightArm=upperArmOpen(b.rs,lm[IDX.RIGHT_ELBOW],"right");
-  addScore(bucket,leftArm,0.28); addScore(bucket,rightArm,0.28);
-  if(visible(lm[IDX.NOSE])){ const centeredHead=clamp01(1-Math.abs((lm[IDX.NOSE].x-b.shoulderMid.x)/b.shoulderW)/0.55); addScore(bucket,centeredHead,0.14); }
+  const leftElbow=elbowOpenScore(b.ls,lm[IDX.LEFT_ELBOW],"left");
+  const rightElbow=elbowOpenScore(b.rs,lm[IDX.RIGHT_ELBOW],"right");
+  addScore(bucket,leftElbow,0.18); addScore(bucket,rightElbow,0.18);
+  if(visible(lm[IDX.NOSE])){
+    const signedHeadShift = targetSide==="right"
+      ? (lm[IDX.NOSE].x-b.hipMid.x)/b.shoulderW
+      : (b.hipMid.x-lm[IDX.NOSE].x)/b.shoulderW;
+    addScore(bucket,rangeScore(signedHeadShift,0.04,0.72,0.30),0.08);
+  }
   let score=bucket.weight?bucket.sum/bucket.weight:0;
   const elbowCount=[lm[IDX.LEFT_ELBOW],lm[IDX.RIGHT_ELBOW]].filter(visible).length;
-  if(elbowCount===2) score=Math.min(score+0.06,0.92);
-  if(elbowCount===1) score=Math.min(score,0.74);
-  if(elbowCount===0) score=Math.min(score,0.48);
-  return { score:0.12*scoreUpperVisibility(lm)+0.88*score,
-    main: score>=0.58?"좋아요! 어깨와 가슴이 열린 자세예요":"팔꿈치가 어깨보다 아래로 보이게 자세를 조정해보세요" };
+  if(elbowCount===2) score=Math.min(score+0.04,0.96);
+  if(elbowCount===1) score=Math.min(score,0.76);
+  if(elbowCount===0) score=Math.min(score,0.42);
+  const dir=targetSide==="right"?"오른쪽":"왼쪽";
+  return {
+    score: 0.10*scoreUpperVisibility(lm)+0.90*score,
+    main: `${dir}으로 허리와 상체를 더 기울여보세요`,
+    sub: "손은 목 뒤에 둔 채, 팔꿈치와 몸통 기울기를 중심으로 판단합니다."
+  };
 }
 function scorePose(lm,type){
-  if(!lm) return { score:0, main:"상반신을 찾는 중입니다 — 머리부터 허리까지 화면에 들어오게 서주세요" };
+  if(!lm) return { score:0, main:"상반신을 찾는 중입니다 — 머리부터 허리까지 화면에 들어오게 서주세요", sub:"" };
   if(type==="neckSide")  return scoreNeckSide(lm);
   if(type==="crossBody") return scoreCrossBody(lm);
-  if(type==="chestOpen") return scoreChestOpen(lm);
-  return { score:0, main:"" };
+  if(type==="handsBehindHeadSideBend") return scoreHandsBehindHeadSideBend(lm);
+  return { score:0, main:"", sub:"" };
 }
 
 /* ── UI 갱신 (데모 화면 요소에 맞춤) ── */
-const $ = id => document.getElementById(id);
 function setAccuracy(pct, matched){
   const t=$("timer"); if(!t) return;
   t.innerHTML=`${pct}%<span class="t-cap">정확도</span>`;
-  t.className="timer"+(matched?" acc-good":(pct>=45?" acc-warn":""));
+  t.className="timer"+(matched?" acc-good":(pct>=Math.round(ALMOST_SCORE_THRESHOLD*100)?" acc-warn":""));
 }
 function setFeedback(msg, good){
   const f=$("feedback"); if(!f) return;
@@ -1825,25 +1891,35 @@ function setHold(progress){
   if(seg) seg.querySelector('.fill').style.width=(Math.min(progress,1)*100)+'%';
 }
 
-/* ── 인식 루프 ── */
-function loop(ts){
-  requestAnimationFrame(loop);
+/* ── 인식 루프 (단일 loop · 다운스케일 검출 throttle · 매 프레임 표시) ── */
+function loop(ts, myLoop){
+  if(myLoop!==loopSerial) return;                      // 중복 루프 차단
+  requestAnimationFrame(t=>loop(t,myLoop));
   if(!running || paused || !poseLandmarker || video.readyState<2) return;
-  if(video.currentTime===lastVideoTime) return;
-  lastVideoTime=video.currentTime;
-  resizeCanvas(); drawVideo();
-  const result=poseLandmarker.detectForVideo(video, ts);
-  const raw=result.landmarks?.[0]||null;
-  latestDisplayLandmarks = raw ? displayLandmarks(raw) : null;
+
+  resizeCanvas(); drawVideo();                          // 표시: 매 프레임 영상
+
+  // 검출: 다운스케일 캔버스에서 일정 주기로만 (떨림↓·부하↓ → 인식 안정)
+  const shouldDetect = video.currentTime!==lastVideoTime && (ts-lastDetectionTs)>=PROCESS_INTERVAL_MS;
+  if(shouldDetect){
+    lastVideoTime=video.currentTime;
+    lastDetectionTs=ts;
+    prepareDetectCanvas();
+    const result=poseLandmarker.detectForVideo(detectCanvas, ts);
+    latestRawLandmarks=result.landmarks?.[0]||null;
+    latestDisplayLandmarks=latestRawLandmarks?displayLandmarks(latestRawLandmarks):null;
+  }
   if(latestDisplayLandmarks) drawUpperSkeleton(latestDisplayLandmarks);
 
-  if(!curMove || !curMove.type) return;   // 채점 대상 아님(호흡 등) → 화면만 표시
-  const rs=scorePose(latestDisplayLandmarks, curMove.type);
-  const matched=rs.score>=curMove.threshold;
-  const dt=lastTs?Math.min((ts-lastTs)/1000,0.08):0; lastTs=ts;
-  holdSec = matched ? holdSec+dt : Math.max(0, holdSec-dt*0.75);
+  if(!curMove || !curMove.type) return;                 // 채점 대상 아님(호흡 등) → 화면만 표시
 
-  setAccuracy(Math.round(rs.score*100), matched);
+  const rs=scorePose(latestDisplayLandmarks, curMove.type);
+  const matched = rs.score>=curMove.threshold;
+  const displayScore = getDisplayScore(rs.score);
+  const dt=lastTs?Math.min((ts-lastTs)/1000,0.08):0; lastTs=ts;
+  holdSec = matched ? holdSec+dt : Math.max(0, holdSec-dt*0.75);   // 유지 누적 / 미스 시 천천히 감소
+
+  setAccuracy(Math.round(displayScore*100), matched);
   setFeedback(matched ? "좋아요! 이 자세를 유지하세요" : rs.main, matched);
   setHold(holdSec/curMove.holdGoal);
 
@@ -1855,7 +1931,7 @@ function loop(ts){
   }
 }
 
-/* ── 카메라 + 모델 로드 ── */
+/* ── 카메라 + 모델 로드 (두번째 코드 옵션 적용) ── */
 async function init(){
   if(initialized) return true;
   loadingEl.classList.remove("hidden");
@@ -1864,7 +1940,9 @@ async function init(){
     baseOptions:{ modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task", delegate:"GPU" },
     runningMode:"VIDEO", numPoses:1, minPoseDetectionConfidence:0.45, minPosePresenceConfidence:0.45, minTrackingConfidence:0.45
   });
-  const stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"user", width:{ideal:720}, height:{ideal:1280} }, audio:false });
+  const stream=await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:"user", width:{ideal:720}, height:{ideal:1280}, frameRate:{ideal:24,max:30} }, audio:false
+  });
   video.srcObject=stream; await video.play();
   loadingEl.classList.add("hidden");
   initialized=true;
@@ -1877,20 +1955,27 @@ window.poseEngine = {
   ready:false,
   init,
   setMove(index, move){
-    curIdx=index; curMove=move; holdSec=0; lastTs=0; fired=false;
-    drawMiniDemo(move ? move.type : null);   // 오른쪽 상단 동작 예시 갱신
+    curIdx=index; curMove=move; targetSide=(move&&move.side)||"right";
+    holdSec=0; lastTs=0; fired=false;
+    drawMiniDemo(move?move.type:null, targetSide);     // 오른쪽 상단 동작 예시 갱신(방향 반영)
     if(move && move.type){
       setAccuracy(0,false);
       setFeedback("자세를 인식하는 중입니다…", true);
     }
   },
-  start(){ if(!initialized) return; running=true; paused=false; lastTs=0; requestAnimationFrame(loop); },
+  start(){
+    if(!initialized) return;
+    running=true; paused=false; lastTs=0; lastVideoTime=-1; lastDetectionTs=0;
+    loopSerial+=1; const my=loopSerial;
+    requestAnimationFrame(t=>loop(t,my));
+  },
   resume(){ paused=false; lastTs=0; },
   pause(){ paused=true; },
-  stop(){ running=false; },
+  stop(){ running=false; loopSerial+=1; },
   shutdown(){
-    running=false; paused=false;
+    running=false; paused=false; loopSerial+=1;
     try{ const s=video.srcObject; if(s) s.getTracks().forEach(t=>t.stop()); video.srcObject=null; }catch(e){}
+    latestRawLandmarks=null; latestDisplayLandmarks=null; lastVideoTime=-1; lastDetectionTs=0;
     initialized=false; window.poseEngine.ready=false;
   }
 };
