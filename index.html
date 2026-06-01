@@ -28,9 +28,9 @@ body{
 }
 svg{display:block;}
 
-/* 베젤 없는(풀스크린) 버전 — 프레임/노치/가짜 상태바 제거 */
+/* 베젤 없는(풀스크린) 버전 — 프레임/노치/가짜 상태바 제거 · 화면 크기에 맞춰 늘어나는 적응형 */
 .device{
-  position:relative;width:100%;max-width:440px;height:100vh;height:100dvh;
+  position:relative;width:100%;height:100vh;height:100dvh;
   margin:0 auto;background:var(--bg);
   border-radius:0;box-shadow:none;
   overflow:hidden;display:flex;flex-direction:column;
@@ -510,6 +510,15 @@ button.ghost:hover{color:var(--ink);}
 .timer.acc-warn{color:var(--warn);}
 .timer .t-cap{display:block;font-family:'Gowun Dodum',sans-serif;font-size:11px;font-weight:400;
   color:rgba(243,244,236,.55);letter-spacing:.04em;margin-top:-2px;}
+/* 남은 시간(유지 잔여시간) 배지 — 인식 모드 스테이지 상단 중앙 */
+.str-stage .hold-remain{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:3;display:none;
+  align-items:baseline;background:rgba(17,20,13,.55);border:1px solid rgba(255,255,255,.14);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#f3f4ec;padding:6px 14px;border-radius:999px;
+  font-family:'Gowun Batang',serif;font-weight:700;font-size:16px;line-height:1;}
+.str-stage .hold-remain span{font-size:21px;margin-right:1px;}
+.str-stage .hold-remain small{font-family:'Gowun Dodum',sans-serif;font-weight:400;font-size:10px;
+  color:rgba(243,244,236,.6);letter-spacing:.04em;margin-left:8px;}
+.device.livecam .str-stage .hold-remain.show{display:inline-flex;}
 
 /* ── 모드별 스테이지: livecam=실제 카메라 / 그 외=예시 아바타 ── */
 .device:not(.livecam) .str-stage .pose-canvas{display:none;}
@@ -938,7 +947,7 @@ button.ghost:hover{color:var(--ink);}
 
       <div class="proto-note" id="protoNote">
         <span class="pn-ico"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 5a1.3 1.3 0 110 2.6A1.3 1.3 0 0112 7zm1.2 10.5h-2.4v-6h2.4z"/></svg></span>
-        <div class="pn-t"><b>프로토타입 안내</b> · 실제 자세 인식은 <b>목·어깨·가슴 3개 동작</b>에 한해 동작합니다. 마지막 호흡 정리는 타이머로 진행돼요. 아래 버튼을 누르면 카메라와 인식 모델을 불러옵니다.</div>
+        <div class="pn-t"><b>프로토타입 안내</b> · 실제 자세 인식은 <b>목·어깨·옆구리 6개 동작</b>(각 동작을 좌·우 양측으로)에 한해 동작합니다. 아래 버튼을 누르면 카메라와 인식 모델을 불러옵니다.</div>
       </div>
 
       <div class="cam-stage">
@@ -988,6 +997,7 @@ button.ghost:hover{color:var(--ink);}
         <div class="seg-bar" id="segBar"></div>
         <div class="str-stage">
           <span class="cam-label" id="camLabel">● LIVE · 자세 인식 중</span>
+          <div class="hold-remain" id="holdRemain"><span id="holdRemainNum">15</span>초<small>남은 시간</small></div>
           <video class="pose-video" id="poseVideo" playsinline muted></video>
           <canvas class="pose-canvas" id="poseCanvas"></canvas>
           <div class="pose-loading hidden" id="poseLoading">
@@ -1340,16 +1350,20 @@ document.querySelectorAll('.survey-chips').forEach(g=>{
    recognized 동작(type 有)은 카메라+MediaPipe 로 실시간 인식,
    정확도 측정 후 자세를 holdGoal 만큼 유지하면 자동으로 다음 동작으로 넘어감.
    type 가 없는 동작(마무리 호흡)과 타이머 모드(recognitionEnabled=false)는 기존 카운트다운으로 진행. */
-/* 데모(실제 카메라) 전용 고정 세트 — 두번째 코드(프로토타입)가 검증한 인식 동작 3개 + 호흡
-   · side          : 방향 인식 기준(두번째 코드 채점 로직이 좌/우를 구분해 판정)
-   · threshold     : 이 내부 점수(raw) 이상이면 '정확' 판정 → 유지 시작
+/* 데모(실제 카메라) 전용 고정 세트 — 두번째 코드(index.html)가 검증한 인식 동작 6개(3종 × 좌/우)
+   · 구성/유지시간은 index.html 의 routine 과 동일: 3가지 스트레칭을 오른쪽→왼쪽 양측으로, 각 holdGoal 15초
+   · side          : 방향 인식 기준(좌/우 구분 판정)
+   · threshold     : 이 내부 점수(raw) 이상이면 '정확' 판정 → 유지 시작 (index.html 값과 동일)
    · goodRawScore  : 화면 정확도 보정 기준점(raw 이 값일 때 화면 90%로 표시)
-   · holdGoal      : 정확 자세를 이 시간(초)만큼 유지하면 자동으로 다음 동작 */
+   · holdGoal      : 정확 자세를 이 시간(초)만큼 유지하면 자동으로 다음 동작 (index.html = 15초)
+   · sec           : 인식 모드에선 미사용(타이머 자리=정확도 표시). 카메라 거부 시 폴백 타이머/총시간 추정용 */
 const DEMO_SEQ=[
-  {id:'neck', name:'목 옆으로 늘이기',          type:'neckSide',               side:'right', threshold:0.80, goodRawScore:0.80, holdGoal:1.5, sec:35},
-  {id:'sh',   name:'어깨 가로 당기기',          type:'crossBody',              side:'right', threshold:0.72, goodRawScore:0.72, holdGoal:1.5, sec:35},
-  {id:'side', name:'목 뒤 손 올리고 옆구리 늘리기', type:'handsBehindHeadSideBend', side:'right', threshold:0.78, goodRawScore:0.78, holdGoal:1.5, sec:35},
-  {id:'cool', name:'마무리 호흡 정리',          type:null, sec:20},
+  {id:'neckR', name:'오른쪽으로 목 늘이기',  type:'neckSide',               side:'right', threshold:0.90, goodRawScore:0.90, holdGoal:15, sec:30},
+  {id:'neckL', name:'왼쪽으로 목 늘이기',    type:'neckSide',               side:'left',  threshold:0.90, goodRawScore:0.90, holdGoal:15, sec:30},
+  {id:'shR',   name:'오른팔 가로 당기기',    type:'crossBody',              side:'right', threshold:0.82, goodRawScore:0.82, holdGoal:15, sec:30},
+  {id:'shL',   name:'왼팔 가로 당기기',      type:'crossBody',              side:'left',  threshold:0.82, goodRawScore:0.82, holdGoal:15, sec:30},
+  {id:'sideR', name:'오른쪽 옆구리 늘리기',  type:'handsBehindHeadSideBend', side:'right', threshold:0.78, goodRawScore:0.80, holdGoal:15, sec:30},
+  {id:'sideL', name:'왼쪽 옆구리 늘리기',    type:'handsBehindHeadSideBend', side:'left',  threshold:0.78, goodRawScore:0.80, holdGoal:15, sec:30},
 ];
 let SEQ = DEMO_SEQ;   // 진입 모드에 따라 교체
 
@@ -1890,6 +1904,13 @@ function setHold(progress){
   const seg=document.querySelectorAll('#segBar .seg')[curIdx];
   if(seg) seg.querySelector('.fill').style.width=(Math.min(progress,1)*100)+'%';
 }
+function setRemain(sec){                                // 남은 유지시간(초) 표시 — index.html 카운트다운과 동일
+  const el=$("holdRemain"), n=$("holdRemainNum");
+  if(!el||!n) return;
+  n.textContent=Math.ceil(Math.max(0,sec));
+  el.classList.add("show");
+}
+function hideRemain(){ const el=$("holdRemain"); if(el) el.classList.remove("show"); }
 
 /* ── 인식 루프 (단일 loop · 다운스케일 검출 throttle · 매 프레임 표시) ── */
 function loop(ts, myLoop){
@@ -1917,16 +1938,18 @@ function loop(ts, myLoop){
   const matched = rs.score>=curMove.threshold;
   const displayScore = getDisplayScore(rs.score);
   const dt=lastTs?Math.min((ts-lastTs)/1000,0.08):0; lastTs=ts;
-  holdSec = matched ? holdSec+dt : Math.max(0, holdSec-dt*0.75);   // 유지 누적 / 미스 시 천천히 감소
+  holdSec = matched ? Math.min(curMove.holdGoal, holdSec+dt) : holdSec;   // 정확할 때만 누적 / 아니면 멈춤(감소·증가 없음)
 
   setAccuracy(Math.round(displayScore*100), matched);
   setFeedback(matched ? "좋아요! 이 자세를 유지하세요" : rs.main, matched);
   setHold(holdSec/curMove.holdGoal);
+  setRemain(curMove.holdGoal - holdSec);
 
   if(holdSec>=curMove.holdGoal && !fired){
     fired=true;
     setFeedback("통과! 다음 동작으로 넘어갈게요", true);
     setHold(1);
+    setRemain(0);
     setTimeout(()=>{ if(window.completeRecognizedMove) window.completeRecognizedMove(); }, 380);
   }
 }
@@ -1961,6 +1984,9 @@ window.poseEngine = {
     if(move && move.type){
       setAccuracy(0,false);
       setFeedback("자세를 인식하는 중입니다…", true);
+      setRemain(move.holdGoal||0);
+    } else {
+      hideRemain();
     }
   },
   start(){
@@ -1973,7 +1999,7 @@ window.poseEngine = {
   pause(){ paused=true; },
   stop(){ running=false; loopSerial+=1; },
   shutdown(){
-    running=false; paused=false; loopSerial+=1;
+    running=false; paused=false; loopSerial+=1; hideRemain();
     try{ const s=video.srcObject; if(s) s.getTracks().forEach(t=>t.stop()); video.srcObject=null; }catch(e){}
     latestRawLandmarks=null; latestDisplayLandmarks=null; lastVideoTime=-1; lastDetectionTs=0;
     initialized=false; window.poseEngine.ready=false;
